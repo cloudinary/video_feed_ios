@@ -11,15 +11,16 @@ import Cloudinary
 class VideoFeedViewController: UIViewController, VideoSelectionDelegate {
 
     @IBOutlet weak var collectionView: UICollectionView!
-
-    private var videos: [Video] = []
-    private var collectionHandler: VideoFeedCollectionHandler?
     @IBOutlet weak var vwToolbar: UIView!
+
+    private var viewModel = VideoFeedViewModel()
+    private var collectionHandler: VideoFeedCollectionHandler?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
-        loadVideos()
+        bindViewModel()
+        viewModel.fetchVideos()
     }
 
     private func setupUI() {
@@ -37,15 +38,34 @@ class VideoFeedViewController: UIViewController, VideoSelectionDelegate {
             layout.itemSize = CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         }
     }
+    
+    private func bindViewModel() {
+        viewModel.onVideosLoaded = { [weak self] in
+            self?.setupCollectionView()
+        }
+    }
 
-    private func loadVideos() {
-        let dataLoader = PlistVideoLoader()
-        videos = dataLoader.loadVideos()
-
-        collectionHandler = VideoFeedCollectionHandler(videos: videos, delegate: self)
+    private func setupCollectionView() {
+        collectionHandler = VideoFeedCollectionHandler(videos: viewModel.videos, delegate: self)
         collectionView.dataSource = collectionHandler
-        collectionView.delegate = collectionHandler 
+        collectionView.delegate = collectionHandler
+        collectionView.prefetchDataSource = collectionHandler
         collectionView.reloadData()
+
+        // Auto-play the first video once the UI is ready
+        DispatchQueue.main.async {
+            self.playFirstVideo()
+        }
+    }
+
+    private func playFirstVideo() {
+        let firstIndexPath = IndexPath(item: 0, section: 0)
+        // Ensure layout is up to date
+        collectionView.layoutIfNeeded()
+        
+        if let cell = collectionView.cellForItem(at: firstIndexPath) as? VideoCell {
+            cell.play()
+        }
     }
 
     // MARK: - VideoSelectionDelegate

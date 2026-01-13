@@ -6,5 +6,5 @@
 //
 
 class Utils {
-    static var SP_AUTO_ENABLED = true
+    static var SP_AUTO_ENABLED = false
 }

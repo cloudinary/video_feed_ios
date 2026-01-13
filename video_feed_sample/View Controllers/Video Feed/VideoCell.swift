@@ -16,6 +16,7 @@ class VideoCell: UICollectionViewCell {
 
     private var player: CLDVideoPlayer?
     private var playerViewController: AVPlayerViewController?
+    private var observer: NSObjectProtocol?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -32,32 +33,43 @@ class VideoCell: UICollectionViewCell {
     }
 
     func configure(with video: Video) {
-        // Remove existing player
-        playerViewController?.view.removeFromSuperview()
-        player?.pause()
-        player = nil
+        // cleanup old observer
+        if let observer = observer {
+            NotificationCenter.default.removeObserver(observer)
+            self.observer = nil
+        }
 
-        let player = CLDVideoPlayer(url: URL(string: video.generateURLString())!)
+        // Get player from service
+        let player = VideoPlayerService.shared.getPlayer(for: video)
+        player.isMuted = true
         self.player = player
 
-        let playerViewController = AVPlayerViewController()
-        playerViewController.player = player
-        playerViewController.videoGravity = .resizeAspectFill
-        playerViewController.showsPlaybackControls = false  // Hide controls for TikTok-like experience
-        playerViewController.view.frame = bounds
-        playerViewController.view.backgroundColor = .black
- 
-        contentView.addSubview(playerViewController.view)
-        self.playerViewController = playerViewController
-
-        // Add Observer for Looping
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(playerDidFinishPlaying),
-            name: .AVPlayerItemDidPlayToEndTime,
-            object: player.currentItem
-        )
-        addVideoOverlay(playerViewController)
+        // Lazy load player view controller
+        if playerViewController == nil {
+            let pvc = AVPlayerViewController()
+            pvc.videoGravity = .resizeAspectFill
+            pvc.showsPlaybackControls = false
+            pvc.view.backgroundColor = .black
+            
+            contentView.addSubview(pvc.view)
+            pvc.view.frame = bounds
+            pvc.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            
+            self.playerViewController = pvc
+            addVideoOverlay(pvc)
+        }
+        
+        playerViewController?.player = player
+        
+        // Add Observer for Looping using block-based observer for easier lifecycle management
+        self.observer = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: player.currentItem,
+            queue: .main
+        ) { [weak self] _ in
+            self?.player?.seek(to: .zero)
+            self?.player?.play()
+        }
     }
 
     private func addVideoOverlay(_ playerController: AVPlayerViewController) {
@@ -69,15 +81,11 @@ class VideoCell: UICollectionViewCell {
         overlayViewController.didMove(toParent: playerController)
 
         // Add the overlay view controller's view as a subview to playerController's contentOverlayView
-        playerController.contentOverlayView?.addSubview(overlayViewController.view)
-        overlayViewController.view.frame = playerController.contentOverlayView?.bounds ?? .zero
+        // Use contentOverlayView if available, else view
+        let targetView = playerController.contentOverlayView ?? playerController.view
+        targetView?.addSubview(overlayViewController.view)
+        overlayViewController.view.frame = targetView?.bounds ?? .zero
         overlayViewController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-    }
-
-
-    @objc private func playerDidFinishPlaying(_ notification: Notification) {
-        player?.seek(to: .zero)
-        player?.play()
     }
 
     func play() {
@@ -91,5 +99,17 @@ class VideoCell: UICollectionViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         pause()
+        if let observer = observer {
+            NotificationCenter.default.removeObserver(observer)
+            self.observer = nil
+        }
+        playerViewController?.player = nil
+        player = nil
+    }
+    
+    deinit {
+        if let observer = observer {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 }

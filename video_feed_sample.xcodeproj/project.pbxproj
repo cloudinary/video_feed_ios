@@ -157,6 +157,7 @@
 				DEVELOPMENT_TEAM = 3TR999VVAS;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = video_feed_sample/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Video Feed";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen.storyboard;
 				INFOPLIST_KEY_UIMainStoryboardFile = Splash;
@@ -185,6 +186,7 @@
 				DEVELOPMENT_TEAM = 3TR999VVAS;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = video_feed_sample/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Video Feed";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen.storyboard;
 				INFOPLIST_KEY_UIMainStoryboardFile = Splash;
@@ -351,7 +353,7 @@
 			repositoryURL = "https://github.com/cloudinary/cloudinary_ios";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 5.1.0;
+				minimumVersion = 5.2.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

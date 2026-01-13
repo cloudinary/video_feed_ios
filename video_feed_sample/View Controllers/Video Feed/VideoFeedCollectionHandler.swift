@@ -7,7 +7,7 @@
 
 import UIKit
 
-class VideoFeedCollectionHandler: NSObject, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+class VideoFeedCollectionHandler: NSObject, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout, UICollectionViewDataSourcePrefetching {
 
     private var videos: [Video] = []
     weak var delegate: VideoSelectionDelegate?
@@ -29,11 +29,7 @@ class VideoFeedCollectionHandler: NSObject, UICollectionViewDelegate, UICollecti
     }
 
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let toolbarHeight = (collectionView.superview?.superview as? VideoFeedViewController)?.vwToolbar.frame.height ?? 0
-        let safeAreaBottom = collectionView.safeAreaInsets.bottom
-        let availableHeight = collectionView.bounds.height - toolbarHeight - safeAreaBottom
-
-        return CGSize(width: collectionView.bounds.width, height: availableHeight)
+        return collectionView.bounds.size
     }
 
 
@@ -57,6 +53,16 @@ class VideoFeedCollectionHandler: NSObject, UICollectionViewDelegate, UICollecti
         let visibleIndex = Int(nearestIndex)
         if let cell = collectionView.cellForItem(at: IndexPath(item: visibleIndex, section: 0)) as? VideoCell {
             cell.play()
+        }
+    }
+    
+    // MARK: - UICollectionViewDataSourcePrefetching
+    func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+        for indexPath in indexPaths {
+            guard !videos.isEmpty else { return }
+            let videoIndex = indexPath.row % videos.count
+            let video = videos[videoIndex]
+            VideoPlayerService.shared.preloadVideo(video)
         }
     }
 }
